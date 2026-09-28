@@ -34,41 +34,37 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>Welcome to BhumiLekh</h1>
-        <p>Sign in with your email to continue</p>
+    <div className="login-page">
+      <div className="login-visual-panel" />
+      <div className="login-form-panel">
+        <h1 className="login-brand">BhumiLekh</h1>
 
         {status === 'success' ? (
-          <div className="alert alert-success">
+          <p className="login-message">
             Check your email for a magic link to sign in. (In development, check the backend console for the link).
-          </div>
+          </p>
         ) : (
-          <form onSubmit={handleSubmit}>
-            {status === 'error' && (
-              <div className="alert alert-error">{errorMessage}</div>
-            )}
-            <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                required
-                disabled={status === 'loading'}
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="btn-primary"
-              disabled={status === 'loading' || !email}
-            >
+          <form onSubmit={handleSubmit} className="login-pill">
+            <input
+              id="email"
+              type="email"
+              aria-label="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              required
+              disabled={status === 'loading'}
+            />
+            <button type="submit" disabled={status === 'loading' || !email}>
               {status === 'loading' ? 'Sending...' : 'Send Magic Link'}
             </button>
           </form>
         )}
+        {status === 'error' && <p className="login-message error">{errorMessage}</p>}
+
+        <div className="cookie-notice">
+          We use cookies to keep you signed in and to improve your experience.
+        </div>
       </div>
     </div>
   );

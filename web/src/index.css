@@ -1,7 +1,7 @@
 @layer theme, base, components, utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
@@ -11,7 +11,15 @@
   --color-muted: #56605b;
   --color-paper: #f4f2ec;
   --color-line: #ddd9cf;
+  --color-forest-soft: #e3eeeb;
+  --color-rule: #ece9e1;
+  --color-warn: #8a4204;
+  --color-warn-soft: #fbebd7;
+  --color-sale: #3b4a8c;
+  --color-sale-soft: #e6e9f5;
+  --color-risk: #9b1c1c;
   --font-plex: 'IBM Plex Sans', sans-serif;
+  --font-plex-mono: 'IBM Plex Mono', monospace;
 }
 
 :root {

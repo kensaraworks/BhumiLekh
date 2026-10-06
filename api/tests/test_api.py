@@ -53,6 +53,24 @@ async def test_request_magic_link(async_client):
     assert "magic link has been sent" in response.json()["message"]
 
 @pytest.mark.asyncio
+async def test_magic_link_returned_in_development(async_client, monkeypatch):
+    from api.app.config import settings
+    monkeypatch.setattr(settings, "app_env", "development")
+    monkeypatch.setattr(settings, "allowed_emails", "user@example.com")
+    response = await async_client.post("/api/auth/request-magic-link", json={"email": "user@example.com"})
+    assert response.status_code == 200
+    assert "/login/verify?token=" in response.json()["dev_link"]
+
+@pytest.mark.asyncio
+async def test_magic_link_hidden_outside_development(async_client, monkeypatch):
+    from api.app.config import settings
+    monkeypatch.setattr(settings, "app_env", "production")
+    monkeypatch.setattr(settings, "allowed_emails", "user@example.com")
+    response = await async_client.post("/api/auth/request-magic-link", json={"email": "user@example.com"})
+    assert response.status_code == 200
+    assert "dev_link" not in response.json()
+
+@pytest.mark.asyncio
 async def test_authenticated_user_access(async_client):
     # Need to create the user in the db first through the auth flow or mock
     # Wait, the easiest is just generating a token since the dependency decodes it

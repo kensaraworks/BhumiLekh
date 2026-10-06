@@ -1,0 +1,2461 @@
+{
+  "version": "2026-10-04",
+  "source": "BhumiLekh query playbook (283 queries) — 30 screens selected for the v1 Screen Runner",
+  "domains": [
+    {
+      "id": "accum",
+      "label": "Accumulation & insider detection"
+    },
+    {
+      "id": "distress",
+      "label": "Distress & auction arbitrage"
+    },
+    {
+      "id": "devint",
+      "label": "Developer & project intelligence"
+    },
+    {
+      "id": "reg",
+      "label": "Regulatory & zoning arbitrage"
+    },
+    {
+      "id": "title",
+      "label": "Title risk & diligence"
+    },
+    {
+      "id": "sat",
+      "label": "Satellite & physical reality"
+    },
+    {
+      "id": "network",
+      "label": "Entity networks & beneficial ownership"
+    },
+    {
+      "id": "price",
+      "label": "Price & transaction dynamics"
+    },
+    {
+      "id": "assembly",
+      "label": "Land assembly & aggregation"
+    },
+    {
+      "id": "lifecycle",
+      "label": "Micro-market lifecycle"
+    },
+    {
+      "id": "composite",
+      "label": "Cross-signal composites"
+    }
+  ],
+  "screens": [
+    {
+      "id": "q000",
+      "label": "Silent accumulator in a cold market",
+      "description": "A single entity buying repeatedly in a locality where nobody else is transacting.",
+      "domain": "accum",
+      "params": [
+        {
+          "key": "min_deeds",
+          "label": "Minimum deeds by one cluster",
+          "type": "int",
+          "default": 4,
+          "min": 2,
+          "max": 20
+        },
+        {
+          "key": "cell_m",
+          "label": "Cell size",
+          "type": "select",
+          "default": "1000",
+          "options": [
+            {
+              "value": "500",
+              "label": "500 m"
+            },
+            {
+              "value": "1000",
+              "label": "1 km"
+            },
+            {
+              "value": "2000",
+              "label": "2 km"
+            }
+          ]
+        },
+        {
+          "key": "months",
+          "label": "Look-back",
+          "type": "int",
+          "default": 18,
+          "min": 6,
+          "max": 60,
+          "unit": "months"
+        }
+      ],
+      "caveat": "Distinguish genuine accumulation from a family partitioning inherited land among heirs.",
+      "sources": [
+        "SRO deeds",
+        "Parcel registry"
+      ],
+      "logic": "buyer_entity appears in >=4 registered deeds within a 1km cell over 18 months WHERE cell transaction volume is in the bottom quartile for the district",
+      "render": {
+        "pattern": "HYB",
+        "lead": "table",
+        "unit": "cluster",
+        "map": {
+          "geom": "cluster",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cluster",
+              "label": "Buyer cluster",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "members",
+              "label": "Members",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "conf",
+              "label": "Cluster confidence",
+              "type": "confidence",
+              "sortable": true
+            },
+            {
+              "key": "parcels",
+              "label": "Parcels",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area held",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Deeds in cold cell (18m)",
+              "type": "int",
+              "sortable": true,
+              "metric": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Deeds by one buyer cluster in a cold cell (18m)",
+        "scope": "area",
+        "drill": "cluster_profile",
+        "flags": [
+          "confidence_badge",
+          "alertable"
+        ],
+        "params_from_logic": [
+          "≥4",
+          "1km",
+          "18 months"
+        ]
+      }
+    },
+    {
+      "id": "q007",
+      "label": "Power of Attorney cluster",
+      "description": "Multiple POAs registered to the same holder across different owners in one area.",
+      "domain": "accum",
+      "params": [
+        {
+          "key": "min_grantors",
+          "label": "Minimum grantors",
+          "type": "int",
+          "default": 3,
+          "min": 2,
+          "max": 10,
+          "help": "Between 2 and 10"
+        },
+        {
+          "key": "radius_m",
+          "label": "Radius",
+          "type": "int",
+          "default": 1000,
+          "min": 250,
+          "max": 5000,
+          "step": 250,
+          "unit": "m",
+          "help": "Default 1000"
+        },
+        {
+          "key": "months",
+          "label": "Look-back",
+          "type": "int",
+          "default": 24,
+          "min": 6,
+          "max": 60,
+          "unit": "months",
+          "help": "Default 24"
+        },
+        {
+          "key": "doc_types",
+          "label": "Document types",
+          "type": "multi_select",
+          "default": [
+            "GPA",
+            "SPA",
+            "agreement_to_sell"
+          ],
+          "options": [
+            {
+              "value": "GPA",
+              "label": "General POA"
+            },
+            {
+              "value": "SPA",
+              "label": "Special POA"
+            },
+            {
+              "value": "agreement_to_sell",
+              "label": "Agreement to sell"
+            }
+          ],
+          "help": "Instruments counted as a grant to the holder"
+        }
+      ],
+      "caveat": "Requires the full SRO document index, not just sale deeds.",
+      "sources": [
+        "SRO document index"
+      ],
+      "logic": "doc.type IN ('GPA','SPA','agreement_to_sell') GROUP BY holder HAVING distinct_grantors >= 3 within 1km",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "cluster",
+        "map": {
+          "geom": "cluster",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "holder",
+              "label": "POA holder",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Grantors",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            },
+            {
+              "key": "parcels",
+              "label": "Parcels",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "latest_doc",
+              "label": "Latest POA",
+              "type": "date",
+              "sortable": true
+            },
+            {
+              "key": "conf",
+              "label": "Holder cluster",
+              "type": "confidence",
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Distinct POA/ATS grantors within 1km",
+        "scope": "area",
+        "drill": "cluster_profile",
+        "flags": [
+          "confidence_badge",
+          "alertable"
+        ],
+        "params_from_logic": [
+          "≥3",
+          "1km"
+        ]
+      }
+    },
+    {
+      "id": "q001",
+      "label": "First-time buyer cluster",
+      "description": "A burst of buyers who have never previously transacted anywhere in the district.",
+      "domain": "accum",
+      "params": [
+        {
+          "key": "cell_m",
+          "label": "Cell size",
+          "type": "select",
+          "default": "1000",
+          "options": [
+            {
+              "value": "500",
+              "label": "500 m"
+            },
+            {
+              "value": "1000",
+              "label": "1 km"
+            },
+            {
+              "value": "2000",
+              "label": "2 km"
+            }
+          ]
+        },
+        {
+          "key": "min_buyers",
+          "label": "Minimum first-time buyers",
+          "type": "int",
+          "default": 5,
+          "min": 2,
+          "max": 50
+        },
+        {
+          "key": "months",
+          "label": "Look-back",
+          "type": "int",
+          "default": 12,
+          "min": 3,
+          "max": 36,
+          "unit": "months"
+        }
+      ],
+      "caveat": "Migration-driven end-user buying looks identical; check parcel sizes — investors buy larger.",
+      "sources": [
+        "SRO deeds",
+        "Entity registry"
+      ],
+      "logic": "COUNT(DISTINCT buyer) WHERE buyer.first_seen_in_district > cell.window_start GROUP BY 1km cell HAVING count >= 5 in 12 months",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "cell",
+        "map": {
+          "geom": "cell",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cell",
+              "label": "Cell",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "locality",
+              "label": "Locality",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "sample_n",
+              "label": "Sample n",
+              "type": "sample_n",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "First-time buyers (12m)",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "First-time buyers in cell (12m)",
+        "scope": "area",
+        "drill": "cell_card",
+        "flags": [
+          "time_slider",
+          "alertable"
+        ],
+        "params_from_logic": [
+          "1km",
+          "≥5",
+          "12 months"
+        ]
+      }
+    },
+    {
+      "id": "q003",
+      "label": "Newly incorporated SPV buying land",
+      "description": "Companies incorporated within 12 months of their first land purchase.",
+      "domain": "accum",
+      "params": [
+        {
+          "key": "max_days",
+          "label": "Incorporated within",
+          "type": "int",
+          "default": 365,
+          "min": 30,
+          "max": 1095,
+          "unit": "days",
+          "help": "Days before the company's first deed"
+        },
+        {
+          "key": "above_median_area",
+          "label": "Only parcels above the district median area",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "caveat": "Also used for benami structuring, which is a different signal — check director profiles.",
+      "sources": [
+        "MCA21",
+        "SRO deeds"
+      ],
+      "logic": "buyer.type='company' AND (deed.date - company.incorporation_date) < 365 days AND deed.parcel_area > district_median",
+      "render": {
+        "pattern": "HYB",
+        "lead": "table",
+        "unit": "entity",
+        "map": {
+          "geom": "entity",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "entity",
+              "label": "Entity",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "entity_type",
+              "label": "Type",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "parcels",
+              "label": "Parcels held",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Days, incorporation to first deed",
+              "type": "days",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Days from incorporation to first deed",
+        "scope": "area",
+        "drill": "entity_profile",
+        "flags": [
+          "confidence_badge",
+          "alertable"
+        ],
+        "params_from_logic": [
+          "<365 days"
+        ]
+      }
+    },
+    {
+      "id": "q023",
+      "label": "Registered agreement-to-sell without a follow-on deed",
+      "description": "ATS documents registered more than 18 months ago with no corresponding sale deed.",
+      "domain": "accum",
+      "params": [
+        {
+          "key": "min_age_months",
+          "label": "ATS older than",
+          "type": "int",
+          "default": 18,
+          "min": 6,
+          "max": 120,
+          "unit": "months"
+        }
+      ],
+      "caveat": "In some states an unregistered ATS is common practice and carries no signal.",
+      "sources": [
+        "SRO document index"
+      ],
+      "logic": "doc.type='agreement_to_sell' AND age > 18 months AND NOT EXISTS(sale_deed on same parcel to same buyer)",
+      "render": {
+        "pattern": "HYB",
+        "lead": "table",
+        "unit": "parcel",
+        "map": {
+          "geom": "parcel",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "parcel",
+              "label": "Khasra / ULPIN",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "village",
+              "label": "Village",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "tier",
+              "label": "Boundary",
+              "type": "tier",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Age of ATS without sale deed",
+              "type": "months",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Age of ATS with no follow-on sale deed",
+        "scope": "area",
+        "drill": "parcel_dossier",
+        "flags": [
+          "alertable"
+        ],
+        "params_from_logic": [
+          ">18 months"
+        ]
+      }
+    },
+    {
+      "id": "q010",
+      "label": "Buyer paying above circle rate in a flat market",
+      "description": "Registrations at values materially above the government benchmark where most transact at or below it.",
+      "domain": "accum",
+      "params": [
+        {
+          "key": "min_ratio",
+          "label": "Registered ÷ circle rate above",
+          "type": "decimal",
+          "default": 1.3,
+          "min": 1.0,
+          "max": 5.0,
+          "step": 0.05
+        },
+        {
+          "key": "max_cell_median",
+          "label": "Cell median ratio below",
+          "type": "decimal",
+          "default": 1.05,
+          "min": 0.5,
+          "max": 2.0,
+          "step": 0.05
+        }
+      ],
+      "caveat": "Sometimes just loan-driven — a buyer needing a high registered value for LTV. Check charge filings.",
+      "sources": [
+        "SRO deeds",
+        "Circle rate tables"
+      ],
+      "logic": "deed.value_per_sqft / circle_rate > 1.3 AND cell.median_ratio < 1.05",
+      "render": {
+        "pattern": "HYB",
+        "lead": "table",
+        "unit": "deed",
+        "map": {
+          "geom": "deed",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "deed_date",
+              "label": "Deed date",
+              "type": "date",
+              "sortable": true
+            },
+            {
+              "key": "parcel",
+              "label": "Parcel",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "buyer",
+              "label": "Buyer",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "seller",
+              "label": "Seller",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Registered ₹/sqft ÷ circle rate",
+              "type": "ratio",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Registered ₹/sqft ÷ circle rate",
+        "scope": "area",
+        "drill": "dossier_history",
+        "flags": [
+          "needs_price"
+        ],
+        "params_from_logic": [
+          ">1.3",
+          "<1.05"
+        ]
+      }
+    },
+    {
+      "id": "q026",
+      "label": "Land purchase inside a proposed acquisition corridor",
+      "description": "Buyers acquiring inside a strip already notified for government acquisition.",
+      "domain": "accum",
+      "params": [],
+      "caveat": "Compensation law and multipliers vary by state and by whether consent provisions apply.",
+      "sources": [
+        "Land acquisition notifications",
+        "SRO deeds"
+      ],
+      "logic": "SPATIAL: deed.parcel INTERSECTS acquisition_notification.corridor AND deed.date > notification.date",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "corridor",
+        "map": {
+          "geom": "corridor",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "corridor",
+              "label": "Corridor / segment",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "source_doc",
+              "label": "Source",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "stage",
+              "label": "Stage",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Deeds after notification",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Deeds inside corridor after notification",
+        "scope": "area",
+        "drill": "corridor_card",
+        "flags": [
+          "alertable"
+        ]
+      }
+    },
+    {
+      "id": "q058",
+      "label": "Auction clustering by lender",
+      "description": "One bank auctioning many properties in a single micro-market simultaneously.",
+      "domain": "distress",
+      "params": [
+        {
+          "key": "cell_km",
+          "label": "Cell size",
+          "type": "select",
+          "default": "5",
+          "options": [
+            {
+              "value": "1",
+              "label": "1 km"
+            },
+            {
+              "value": "2",
+              "label": "2 km"
+            },
+            {
+              "value": "5",
+              "label": "5 km"
+            },
+            {
+              "value": "10",
+              "label": "10 km"
+            }
+          ]
+        },
+        {
+          "key": "min_auctions",
+          "label": "Minimum auctions by one lender",
+          "type": "int",
+          "default": 3,
+          "min": 2,
+          "max": 20
+        },
+        {
+          "key": "months",
+          "label": "Window",
+          "type": "int",
+          "default": 6,
+          "min": 1,
+          "max": 24,
+          "unit": "months"
+        }
+      ],
+      "caveat": "Also tells you the lender's local book is impaired — useful if you are a lender yourself.",
+      "sources": [
+        "Auction feeds",
+        "Parcel registry"
+      ],
+      "logic": "COUNT(auctions) BY lender BY 5km cell WHERE count >= 3 within 6 months",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "cell",
+        "map": {
+          "geom": "cell",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cell",
+              "label": "Cell",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "locality",
+              "label": "Locality",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "sample_n",
+              "label": "Sample n",
+              "type": "sample_n",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Auctions by one lender (6m)",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Auctions by one lender per 5km cell (6m)",
+        "scope": "area",
+        "drill": "cell_card",
+        "flags": [],
+        "params_from_logic": [
+          "5km",
+          "≥3",
+          "6 months"
+        ]
+      }
+    },
+    {
+      "id": "q059",
+      "label": "Distress-priced land adjacent to healthy development",
+      "description": "Auctioned parcels sitting immediately next to actively progressing projects.",
+      "domain": "distress",
+      "params": [
+        {
+          "key": "max_distance_m",
+          "label": "Within",
+          "type": "int",
+          "default": 500,
+          "min": 100,
+          "max": 2000,
+          "step": 50,
+          "unit": "m",
+          "help": "Of a RERA project"
+        },
+        {
+          "key": "require_progress",
+          "label": "Require satellite-confirmed progress",
+          "type": "boolean",
+          "default": true,
+          "help": "The caveat asks for genuine progress, not mere registration"
+        }
+      ],
+      "caveat": "Confirm the neighbouring project is genuinely progressing, not merely registered.",
+      "sources": [
+        "Auction feed",
+        "RERA",
+        "Sentinel-2"
+      ],
+      "logic": "SPATIAL: auction.parcel within 500m of RERA project WITH physical progress confirmed by satellite",
+      "render": {
+        "pattern": "HYB",
+        "lead": "table",
+        "unit": "auction",
+        "map": {
+          "geom": "auction",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "property",
+              "label": "Property",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "lender",
+              "label": "Lender",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "reserve_inr",
+              "label": "Reserve",
+              "type": "inr",
+              "sortable": true
+            },
+            {
+              "key": "possession",
+              "label": "Possession",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "auction_date",
+              "label": "Auction date",
+              "type": "date",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Distance to healthy RERA project",
+              "type": "distance_m",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Distance to a healthy RERA project",
+        "scope": "area",
+        "drill": "auction_card",
+        "flags": [
+          "imagery"
+        ],
+        "params_from_logic": [
+          "500m"
+        ]
+      }
+    },
+    {
+      "id": "q052",
+      "label": "Auction reserve versus modelled market value",
+      "description": "Auction listings priced materially below your own comparable-derived valuation.",
+      "domain": "distress",
+      "params": [
+        {
+          "key": "min_discount",
+          "label": "Discount above",
+          "type": "decimal",
+          "default": 0.25,
+          "min": 0.05,
+          "max": 0.9,
+          "step": 0.05,
+          "help": "Share of modelled value"
+        },
+        {
+          "key": "min_comparables",
+          "label": "Minimum comparables",
+          "type": "int",
+          "default": 5,
+          "min": 3,
+          "max": 30
+        },
+        {
+          "key": "comp_radius_km",
+          "label": "Comparables within",
+          "type": "decimal",
+          "default": 2,
+          "min": 0.5,
+          "max": 10,
+          "step": 0.5,
+          "unit": "km"
+        },
+        {
+          "key": "comp_months",
+          "label": "Comparables window",
+          "type": "int",
+          "default": 24,
+          "min": 6,
+          "max": 60,
+          "unit": "months"
+        }
+      ],
+      "caveat": "Reserve is not the clearing price. Model expected final bid, not reserve.",
+      "sources": [
+        "IBAPI / bank auction feeds",
+        "SRO comparables",
+        "Parcel registry"
+      ],
+      "logic": "(model_value - reserve_price) / model_value > 0.25 AND comparable_count >= 5 within 2km and 24 months",
+      "render": {
+        "pattern": "HYB",
+        "lead": "table",
+        "unit": "auction",
+        "map": {
+          "geom": "auction",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "property",
+              "label": "Property",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "lender",
+              "label": "Lender",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "reserve_inr",
+              "label": "Reserve",
+              "type": "inr",
+              "sortable": true
+            },
+            {
+              "key": "possession",
+              "label": "Possession",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "auction_date",
+              "label": "Auction date",
+              "type": "date",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Reserve discount vs modelled value",
+              "type": "percent",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Discount of reserve vs modelled value",
+        "scope": "area",
+        "drill": "auction_card",
+        "flags": [
+          "needs_price",
+          "alertable"
+        ],
+        "params_from_logic": [
+          ">0.25",
+          "≥5",
+          "2km",
+          "24 months"
+        ]
+      }
+    },
+    {
+      "id": "q069",
+      "label": "Auction inventory ageing by geography",
+      "description": "Where distressed inventory sits unsold longest.",
+      "domain": "distress",
+      "params": [
+        {
+          "key": "asset_class",
+          "label": "Asset class",
+          "type": "select",
+          "default": "all",
+          "options": [
+            {
+              "value": "all",
+              "label": "All"
+            },
+            {
+              "value": "residential",
+              "label": "Residential"
+            },
+            {
+              "value": "commercial",
+              "label": "Commercial"
+            },
+            {
+              "value": "agricultural",
+              "label": "Agricultural"
+            },
+            {
+              "value": "industrial",
+              "label": "Industrial"
+            }
+          ]
+        }
+      ],
+      "caveat": "Ageing may reflect an inflated reserve rather than weak demand.",
+      "sources": [
+        "Auction feeds",
+        "Historical archive"
+      ],
+      "logic": "MEASURE median days_on_auction by district and asset class",
+      "render": {
+        "pattern": "STAT",
+        "unit": "district",
+        "table": {
+          "columns": [
+            {
+              "key": "district",
+              "label": "District",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Median days on auction",
+              "type": "days",
+              "metric": true,
+              "sortable": true
+            },
+            {
+              "key": "n",
+              "label": "n",
+              "type": "sample_n",
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Median days on auction, by district",
+        "scope": "area",
+        "drill": "district_card",
+        "flags": [],
+        "chart": "bars"
+      }
+    },
+    {
+      "id": "q090",
+      "label": "Unsold inventory overhang by project",
+      "description": "Projects sitting on large unsold inventory well past completion.",
+      "domain": "devint",
+      "params": [
+        {
+          "key": "months_after_completion",
+          "label": "Months since completion",
+          "type": "int",
+          "default": 12,
+          "min": 3,
+          "max": 60,
+          "unit": "months"
+        }
+      ],
+      "caveat": "Declared inventory is often understated. Cross-check against registered sale deeds in the project.",
+      "sources": [
+        "RERA"
+      ],
+      "logic": "RERA declared unsold units WHERE project.completion_date < today - 12 months",
+      "render": {
+        "pattern": "HYB",
+        "lead": "table",
+        "unit": "project",
+        "map": {
+          "geom": "project",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "project",
+              "label": "RERA project",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "promoter",
+              "label": "Promoter",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "units",
+              "label": "Units",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "status",
+              "label": "Status",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Unsold units, >12m after completion",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Unsold units >12m after completion",
+        "scope": "area",
+        "drill": "project_card",
+        "flags": [],
+        "params_from_logic": [
+          "12 months"
+        ]
+      }
+    },
+    {
+      "id": "q097",
+      "label": "Repeated deadline extensions",
+      "description": "Projects that have sought RERA completion-date extensions more than once.",
+      "domain": "devint",
+      "params": [
+        {
+          "key": "min_extensions",
+          "label": "Minimum extensions",
+          "type": "int",
+          "default": 2,
+          "min": 1,
+          "max": 10
+        },
+        {
+          "key": "exclude_pandemic",
+          "label": "Exclude the pandemic-era blanket extension window",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "caveat": "Blanket pandemic-era extensions distort this. Exclude that window.",
+      "sources": [
+        "RERA"
+      ],
+      "logic": "COUNT(extension applications) per project >= 2",
+      "render": {
+        "pattern": "TBL",
+        "unit": "project",
+        "table": {
+          "columns": [
+            {
+              "key": "project",
+              "label": "RERA project",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "promoter",
+              "label": "Promoter",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "units",
+              "label": "Units",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "status",
+              "label": "Status",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Extension applications",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Two or more extension applications",
+        "scope": "area",
+        "drill": "project_card",
+        "flags": [
+          "alertable"
+        ],
+        "params_from_logic": [
+          "≥2"
+        ]
+      }
+    },
+    {
+      "id": "q084",
+      "label": "Developer directorship churn",
+      "description": "Unusual rates of director appointment and resignation at a developer entity.",
+      "domain": "devint",
+      "params": [],
+      "caveat": "Routine reconstitution after a funding round produces the same pattern.",
+      "sources": [
+        "MCA21"
+      ],
+      "logic": "COUNT(DIR-12 filings) per year vs the developer's own historical rate and peer rate",
+      "render": {
+        "pattern": "TBL",
+        "unit": "dev",
+        "table": {
+          "columns": [
+            {
+              "key": "developer",
+              "label": "Developer",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "projects",
+              "label": "Projects",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "DIR-12 filings per year vs own and peer rate",
+              "type": "ratio",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "DIR-12 filings per year vs own and peer rate",
+        "scope": "area",
+        "drill": "developer_profile",
+        "flags": [
+          "alertable"
+        ]
+      }
+    },
+    {
+      "id": "q120",
+      "label": "Reservation lapse candidates",
+      "description": "Reservations that have gone unacquired past the statutory limit and can be released.",
+      "domain": "reg",
+      "params": [],
+      "caveat": "Requires a purchase notice procedure and often litigation. Specialist counsel needed.",
+      "sources": [
+        "Master plan",
+        "Acquisition records"
+      ],
+      "logic": "reservation.notification_date older than statutory acquisition period AND no acquisition recorded",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "zone",
+        "map": {
+          "geom": "zone",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "zone",
+              "label": "Zone / overlay",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "zone_type",
+              "label": "Type",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Years past statutory period",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Reservation older than statutory period, not acquired",
+        "scope": "area",
+        "drill": "overlay_card",
+        "flags": []
+      }
+    },
+    {
+      "id": "q112",
+      "label": "Land use conversion approval base rates",
+      "description": "Historical approval rate for agricultural-to-non-agricultural conversion, by district.",
+      "domain": "reg",
+      "params": [],
+      "caveat": "Conversion records are public in only some states. Elsewhere use zone adjacency as a proxy.",
+      "sources": [
+        "DTCP / revenue department records"
+      ],
+      "logic": "COUNT(approved CLU) / COUNT(applied CLU) by district and by applicant type",
+      "render": {
+        "pattern": "STAT",
+        "unit": "district",
+        "table": {
+          "columns": [
+            {
+              "key": "district",
+              "label": "District",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "applicant_type",
+              "label": "Applicant type",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "CLU approved ÷ applied",
+              "type": "percent",
+              "metric": true,
+              "sortable": true
+            },
+            {
+              "key": "n",
+              "label": "n",
+              "type": "sample_n",
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "CLU approved ÷ applied, by district and applicant",
+        "scope": "area",
+        "drill": "district_card",
+        "flags": [],
+        "chart": "bars"
+      }
+    },
+    {
+      "id": "q129",
+      "label": "Mutation lag detection",
+      "description": "Registered sales never reflected in the land record.",
+      "domain": "title",
+      "params": [
+        {
+          "key": "min_lag_months",
+          "label": "Deed older than",
+          "type": "int",
+          "default": 24,
+          "min": 6,
+          "max": 120,
+          "unit": "months",
+          "help": "Bhulekh owner still differs from the deed buyer"
+        }
+      ],
+      "caveat": "Bhulekh update lags are routine. Age the threshold to the state's typical lag.",
+      "sources": [
+        "SRO deeds",
+        "Bhulekh"
+      ],
+      "logic": "EXISTS(sale_deed) AND Bhulekh.current_owner ≠ deed.buyer AND deed.age > 24 months",
+      "render": {
+        "pattern": "DOS",
+        "lead": "table",
+        "unit": "parcel",
+        "map": {
+          "geom": "parcel",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "parcel",
+              "label": "Khasra / ULPIN",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "village",
+              "label": "Village",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "tier",
+              "label": "Boundary",
+              "type": "tier",
+              "sortable": true
+            },
+            {
+              "key": "check",
+              "label": "Deed buyer ≠ Bhulekh owner after 24m",
+              "type": "check",
+              "metric": true,
+              "sortable": false
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Deed buyer ≠ Bhulekh owner after 24m",
+        "scope": "area",
+        "drill": "parcel_dossier",
+        "flags": [
+          "batchable"
+        ],
+        "params_from_logic": [
+          ">24 months"
+        ]
+      }
+    },
+    {
+      "id": "q130",
+      "label": "Multiple sale detection",
+      "description": "The same parcel sold more than once by the same seller to different buyers.",
+      "domain": "title",
+      "params": [],
+      "caveat": "Sales of undivided shares to different buyers are legitimate and look similar.",
+      "sources": [
+        "SRO deeds",
+        "Parcel registry"
+      ],
+      "logic": "GROUP BY parcel: COUNT(deeds) WHERE seller identical AND buyers differ AND periods overlap",
+      "render": {
+        "pattern": "DOS",
+        "lead": "table",
+        "unit": "parcel",
+        "map": {
+          "geom": "parcel",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "parcel",
+              "label": "Khasra / ULPIN",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "village",
+              "label": "Village",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "tier",
+              "label": "Boundary",
+              "type": "tier",
+              "sortable": true
+            },
+            {
+              "key": "check",
+              "label": "Same seller, different buyers, overlapping",
+              "type": "check",
+              "metric": true,
+              "sortable": false
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Same seller, different buyers, overlapping",
+        "scope": "area",
+        "drill": "parcel_dossier",
+        "flags": [
+          "batchable"
+        ]
+      }
+    },
+    {
+      "id": "q128",
+      "label": "Chain of title completeness",
+      "description": "Whether every transfer in a parcel's recorded history links to the previous one.",
+      "domain": "title",
+      "params": [],
+      "caveat": "Records digitised from a cut-off date create artificial gaps before that date.",
+      "sources": [
+        "SRO deeds",
+        "Bhulekh mutation records"
+      ],
+      "logic": "WALK deed chain backward; flag any gap where seller ≠ prior recorded owner",
+      "render": {
+        "pattern": "DOS",
+        "lead": "table",
+        "unit": "parcel",
+        "map": {
+          "geom": "parcel",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "parcel",
+              "label": "Khasra / ULPIN",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "village",
+              "label": "Village",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "tier",
+              "label": "Boundary",
+              "type": "tier",
+              "sortable": true
+            },
+            {
+              "key": "check",
+              "label": "Gap in deed chain",
+              "type": "check",
+              "metric": true,
+              "sortable": false
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Gap in deed chain (seller ≠ prior owner)",
+        "scope": "area",
+        "drill": "parcel_dossier",
+        "flags": [
+          "batchable"
+        ]
+      }
+    },
+    {
+      "id": "q135",
+      "label": "Power of attorney sale exposure",
+      "description": "Sales executed by an attorney rather than the owner.",
+      "domain": "title",
+      "params": [],
+      "caveat": "Registered irrevocable POAs coupled with consideration are stronger. Check the POA terms.",
+      "sources": [
+        "SRO deeds"
+      ],
+      "logic": "deed.executant_capacity = 'power of attorney holder'",
+      "render": {
+        "pattern": "DOS",
+        "lead": "table",
+        "unit": "parcel",
+        "map": {
+          "geom": "parcel",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "parcel",
+              "label": "Khasra / ULPIN",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "village",
+              "label": "Village",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "tier",
+              "label": "Boundary",
+              "type": "tier",
+              "sortable": true
+            },
+            {
+              "key": "check",
+              "label": "Executant signed as POA holder",
+              "type": "check",
+              "metric": true,
+              "sortable": false
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Executant signed as POA holder",
+        "scope": "area",
+        "drill": "parcel_dossier",
+        "flags": [
+          "batchable"
+        ]
+      }
+    },
+    {
+      "id": "q152",
+      "label": "Land clearing as a pre-construction signal",
+      "description": "Vegetation removal and ground levelling before any visible structure.",
+      "domain": "sat",
+      "params": [
+        {
+          "key": "min_area_ha",
+          "label": "Cleared area above",
+          "type": "decimal",
+          "default": 0.2,
+          "min": 0.05,
+          "max": 5,
+          "step": 0.05,
+          "unit": "ha"
+        },
+        {
+          "key": "detected_between",
+          "label": "Detected between",
+          "type": "date_range",
+          "default": {
+            "from": "-12m",
+            "to": "today"
+          }
+        },
+        {
+          "key": "multi_season",
+          "label": "Require multi-season persistence",
+          "type": "boolean",
+          "default": true,
+          "help": "Filters harvest and seasonal fallow"
+        }
+      ],
+      "caveat": "Agricultural harvest and seasonal fallow produce similar NDVI drops. Require multi-season persistence.",
+      "sources": [
+        "Sentinel-2"
+      ],
+      "logic": "NDVI drop plus bare-soil index increase over a contiguous area > 0.2 hectares",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "site",
+        "map": {
+          "geom": "site",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "site",
+              "label": "Site",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "first_detected",
+              "label": "First detected",
+              "type": "date",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Cleared area",
+              "type": "area_ha",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Cleared area >0.2ha (NDVI down, bare soil up)",
+        "scope": "area",
+        "drill": "imagery_compare",
+        "flags": [
+          "imagery",
+          "time_slider",
+          "alertable"
+        ],
+        "params_from_logic": [
+          ">0.2 hectares"
+        ]
+      }
+    },
+    {
+      "id": "q173",
+      "label": "Shared registered address clustering",
+      "description": "Entities sharing a registered office address.",
+      "domain": "network",
+      "params": [
+        {
+          "key": "min_entities",
+          "label": "Minimum entities per address",
+          "type": "int",
+          "default": 3,
+          "min": 2,
+          "max": 50
+        },
+        {
+          "key": "exclude_service",
+          "label": "Exclude known service addresses",
+          "type": "boolean",
+          "default": true,
+          "help": "Chartered accountant and company-secretary offices"
+        }
+      ],
+      "caveat": "Chartered accountant offices host hundreds of unrelated entities. Filter known service addresses.",
+      "sources": [
+        "MCA21"
+      ],
+      "logic": "GROUP entities BY normalised registered address HAVING count >= 3",
+      "render": {
+        "pattern": "TBL",
+        "unit": "entity",
+        "table": {
+          "columns": [
+            {
+              "key": "entity",
+              "label": "Entity",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "entity_type",
+              "label": "Type",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "parcels",
+              "label": "Parcels held",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Entities at the address",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Entities per normalised address (≥3)",
+        "scope": "area",
+        "drill": "entity_profile",
+        "flags": [
+          "confidence_badge"
+        ],
+        "params_from_logic": [
+          "≥3"
+        ]
+      }
+    },
+    {
+      "id": "q177",
+      "label": "Nominee director identification",
+      "description": "Individuals holding many directorships with no discernible independent economic profile.",
+      "domain": "network",
+      "params": [
+        {
+          "key": "min_directorships",
+          "label": "Directorships more than",
+          "type": "int",
+          "default": 10,
+          "min": 5,
+          "max": 50
+        }
+      ],
+      "caveat": "Some are genuine professional directors. Check tenure and board participation where disclosed.",
+      "sources": [
+        "MCA21"
+      ],
+      "logic": "person.directorship_count > 10 AND no shareholding AND appears across unrelated industries",
+      "render": {
+        "pattern": "TBL",
+        "unit": "person",
+        "table": {
+          "columns": [
+            {
+              "key": "person",
+              "label": "Person",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "linked_entities",
+              "label": "Linked entities",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Directorships",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "10+ directorships, no shareholding",
+        "scope": "area",
+        "drill": "person_profile",
+        "flags": [
+          "confidence_badge"
+        ],
+        "params_from_logic": [
+          ">10"
+        ]
+      }
+    },
+    {
+      "id": "q194",
+      "label": "Seasonality in registration volume",
+      "description": "Predictable annual cycles in transaction timing.",
+      "domain": "price",
+      "params": [],
+      "caveat": "Regional festival calendars differ. Compute per region, not nationally.",
+      "sources": [
+        "SRO deeds"
+      ],
+      "logic": "decompose monthly deed counts into seasonal and trend components per district",
+      "render": {
+        "pattern": "STAT",
+        "unit": "chart",
+        "table": {
+          "columns": [
+            {
+              "key": "month",
+              "label": "Month",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Seasonal component",
+              "type": "decimal",
+              "metric": true,
+              "sortable": true
+            },
+            {
+              "key": "trend",
+              "label": "Trend",
+              "type": "decimal",
+              "sortable": true
+            },
+            {
+              "key": "n",
+              "label": "Deeds",
+              "type": "sample_n",
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Seasonal vs trend in monthly deed counts",
+        "scope": "area",
+        "drill": "rows",
+        "flags": [],
+        "chart": "line"
+      }
+    },
+    {
+      "id": "q190",
+      "label": "Price-volume divergence",
+      "description": "Cells where volume is rising but price has not yet moved.",
+      "domain": "price",
+      "params": [
+        {
+          "key": "volume_pct",
+          "label": "Volume growth above percentile",
+          "type": "int",
+          "default": 40,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "key": "price_pct",
+          "label": "Price growth below percentile",
+          "type": "int",
+          "default": 20,
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "caveat": "Can also indicate distressed volume. Cross-check against below-circle-rate share.",
+      "sources": [
+        "SRO deeds"
+      ],
+      "logic": "volume_growth_yoy > 40th percentile AND price_growth_yoy < 20th percentile",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "cell",
+        "map": {
+          "geom": "cell",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cell",
+              "label": "Cell",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "locality",
+              "label": "Locality",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "sample_n",
+              "label": "Sample n",
+              "type": "sample_n",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Volume growth pct ÷ price growth pct",
+              "type": "text",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Volume growth high, price growth low",
+        "scope": "area",
+        "drill": "cell_card",
+        "flags": [
+          "needs_price",
+          "alertable"
+        ],
+        "params_from_logic": [
+          ">40th pct",
+          "<20th pct"
+        ]
+      }
+    },
+    {
+      "id": "q214",
+      "label": "Existing partial assemblies",
+      "description": "Blocks where someone else has already assembled most of the parcels.",
+      "domain": "assembly",
+      "params": [
+        {
+          "key": "min_share_pct",
+          "label": "Share of contiguous block above",
+          "type": "int",
+          "default": 60,
+          "min": 30,
+          "max": 100,
+          "step": 5,
+          "unit": "%"
+        }
+      ],
+      "caveat": "Requires the assembler to still be solvent and committed. Check their entity health.",
+      "sources": [
+        "Bhulekh",
+        "SRO deeds",
+        "Entity graph"
+      ],
+      "logic": "resolved cluster holds > 60% of a contiguous block area",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "cluster",
+        "map": {
+          "geom": "cluster",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cluster",
+              "label": "Buyer cluster",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "members",
+              "label": "Members",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "conf",
+              "label": "Cluster confidence",
+              "type": "confidence",
+              "sortable": true
+            },
+            {
+              "key": "parcels",
+              "label": "Parcels",
+              "type": "int",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area held",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Share of block held",
+              "type": "percent",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "One cluster holds >60% of a contiguous block",
+        "scope": "area",
+        "drill": "cluster_profile",
+        "flags": [
+          "confidence_badge",
+          "alertable"
+        ],
+        "params_from_logic": [
+          ">60%"
+        ]
+      }
+    },
+    {
+      "id": "q219",
+      "label": "Parallel assembly detection",
+      "description": "Two different parties assembling in the same area simultaneously.",
+      "domain": "assembly",
+      "params": [
+        {
+          "key": "cell_m",
+          "label": "Cell size",
+          "type": "select",
+          "default": "1000",
+          "options": [
+            {
+              "value": "500",
+              "label": "500 m"
+            },
+            {
+              "value": "1000",
+              "label": "1 km"
+            },
+            {
+              "value": "2000",
+              "label": "2 km"
+            }
+          ]
+        },
+        {
+          "key": "months",
+          "label": "Window",
+          "type": "int",
+          "default": 18,
+          "min": 6,
+          "max": 36,
+          "unit": "months"
+        },
+        {
+          "key": "min_clusters",
+          "label": "Minimum clusters",
+          "type": "int",
+          "default": 2,
+          "min": 2,
+          "max": 10
+        }
+      ],
+      "caveat": "Distinguish genuine competitors from one party using multiple vehicles.",
+      "sources": [
+        "SRO deeds",
+        "Entity graph"
+      ],
+      "logic": "two or more distinct clusters each accumulating in the same 1km cell within the same 18 months",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "cell",
+        "map": {
+          "geom": "cell",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cell",
+              "label": "Cell",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "locality",
+              "label": "Locality",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "sample_n",
+              "label": "Sample n",
+              "type": "sample_n",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Clusters accumulating in cell",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Two or more clusters accumulating in one cell",
+        "scope": "area",
+        "drill": "cell_card",
+        "flags": [
+          "confidence_badge",
+          "alertable"
+        ],
+        "params_from_logic": [
+          "1km",
+          "18 months"
+        ]
+      }
+    },
+    {
+      "id": "q256",
+      "label": "Dormant-to-awakening transition",
+      "description": "Cells showing their first sustained increase in activity after years of nothing.",
+      "domain": "lifecycle",
+      "params": [
+        {
+          "key": "baseline_years",
+          "label": "Baseline",
+          "type": "int",
+          "default": 5,
+          "min": 2,
+          "max": 10,
+          "unit": "years"
+        },
+        {
+          "key": "consecutive_quarters",
+          "label": "Consecutive quarters above baseline",
+          "type": "int",
+          "default": 3,
+          "min": 2,
+          "max": 8
+        }
+      ],
+      "caveat": "Most awakenings stall. Expect a low hit rate and size positions accordingly.",
+      "sources": [
+        "SRO deeds",
+        "Sentinel-2"
+      ],
+      "logic": "deed velocity and built-up growth both cross above their own 5-year baseline for 3 consecutive quarters",
+      "render": {
+        "pattern": "HYB",
+        "lead": "map",
+        "unit": "cell",
+        "map": {
+          "geom": "cell",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cell",
+              "label": "Cell",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "locality",
+              "label": "Locality",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "sample_n",
+              "label": "Sample n",
+              "type": "sample_n",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Quarters above baseline",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Velocity and built-up above 5y baseline for 3Q",
+        "scope": "area",
+        "drill": "cell_card",
+        "flags": [
+          "time_slider",
+          "alertable"
+        ]
+      }
+    },
+    {
+      "id": "q271",
+      "label": "Conversion candidate with clean title and confirmed access",
+      "description": "Agricultural land genuinely positioned to convert, with no disqualifying defects.",
+      "domain": "composite",
+      "params": [
+        {
+          "key": "max_zone_distance_m",
+          "label": "Zone adjacency within",
+          "type": "int",
+          "default": 200,
+          "min": 50,
+          "max": 1000,
+          "step": 50,
+          "unit": "m"
+        },
+        {
+          "key": "min_clu_rate_pct",
+          "label": "District CLU approval rate above",
+          "type": "int",
+          "default": 50,
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "unit": "%"
+        }
+      ],
+      "caveat": "Passing every filter still leaves conversion timing uncertain by years.",
+      "sources": [
+        "Zoning",
+        "CLU records",
+        "Bhulekh",
+        "SRO deeds",
+        "Road records"
+      ],
+      "logic": "zone adjacency < 200m AND district CLU approval rate > 50% AND title battery passes AND recorded road access AND not in NDZ/green belt/CRZ",
+      "render": {
+        "pattern": "CMP",
+        "lead": "table",
+        "unit": "parcel",
+        "map": {
+          "geom": "parcel",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "parcel",
+              "label": "Khasra / ULPIN",
+              "type": "entity",
+              "sortable": true
+            },
+            {
+              "key": "village",
+              "label": "Village",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "area_ha",
+              "label": "Area",
+              "type": "area_ha",
+              "sortable": true
+            },
+            {
+              "key": "tier",
+              "label": "Boundary",
+              "type": "tier",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Conditions passed",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Zone-adjacent ∩ CLU rate >50% ∩ title ∩ access ∩ not NDZ",
+        "scope": "area",
+        "drill": "parcel_dossier",
+        "flags": [],
+        "params_from_logic": [
+          "<200m",
+          ">50%"
+        ],
+        "conditions": [
+          {
+            "key": "zone_adjacent",
+            "label": "Zone adjacency"
+          },
+          {
+            "key": "clu_rate",
+            "label": "District CLU approval rate"
+          },
+          {
+            "key": "title",
+            "label": "Title battery passes"
+          },
+          {
+            "key": "access",
+            "label": "Recorded road access"
+          },
+          {
+            "key": "not_ndz",
+            "label": "Not in NDZ / green belt / CRZ"
+          }
+        ]
+      }
+    },
+    {
+      "id": "q269",
+      "label": "Quiet accumulation in a dormant cell with confirmed infrastructure",
+      "description": "The highest-conviction combination available from public data.",
+      "domain": "composite",
+      "params": [],
+      "caveat": "Rare by construction. Expect a handful of hits per state per year.",
+      "sources": [
+        "SRO deeds",
+        "Entity graph",
+        "Tender feed",
+        "Sentinel-2"
+      ],
+      "logic": "cluster accumulation detected AND cell lifecycle = dormant/awakening AND infra project has work order AND satellite mobilisation confirmed",
+      "render": {
+        "pattern": "CMP",
+        "lead": "map",
+        "unit": "cell",
+        "map": {
+          "geom": "cell",
+          "color_by": "metric"
+        },
+        "table": {
+          "columns": [
+            {
+              "key": "cell",
+              "label": "Cell",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "locality",
+              "label": "Locality",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "key": "sample_n",
+              "label": "Sample n",
+              "type": "sample_n",
+              "sortable": true
+            },
+            {
+              "key": "metric",
+              "label": "Conditions passed",
+              "type": "int",
+              "metric": true,
+              "sortable": true
+            }
+          ],
+          "sort": "metric desc"
+        },
+        "metric": "Accumulation ∩ dormant/awakening ∩ work order ∩ mobilisation",
+        "scope": "area",
+        "drill": "cell_card",
+        "flags": [
+          "confidence_badge",
+          "imagery",
+          "alertable"
+        ],
+        "conditions": [
+          {
+            "key": "accumulation",
+            "label": "Cluster accumulation detected"
+          },
+          {
+            "key": "lifecycle",
+            "label": "Cell dormant or awakening"
+          },
+          {
+            "key": "work_order",
+            "label": "Infrastructure work order issued"
+          },
+          {
+            "key": "mobilisation",
+            "label": "Satellite mobilisation confirmed"
+          }
+        ]
+      }
+    }
+  ]
+}

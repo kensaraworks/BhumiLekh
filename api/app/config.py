@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     )
     
     @property
+    def frontend_url_list(self) -> list[str]:
+        """FRONTEND_URL may hold several comma-separated origins (e.g. localhost + ngrok)."""
+        return [u.strip().rstrip("/") for u in self.frontend_url.split(",") if u.strip()]
+
+    @property
     def allowed_email_list(self) -> list[str]:
         return [email.strip() for email in self.allowed_emails.split(",") if email.strip()]
 

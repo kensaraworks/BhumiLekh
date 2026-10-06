@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from jose import JWTError, jwt
@@ -13,8 +13,21 @@ from api.app.config import settings
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
+
+def _frontend_base(request: Request) -> str:
+    """Pick the frontend origin for the magic link.
+
+    Uses the browser's Origin header only if it's in FRONTEND_URL, so a forged
+    Origin can't make us mint links pointing at someone else's site.
+    """
+    allowed = settings.frontend_url_list
+    origin = (request.headers.get("origin") or "").rstrip("/")
+    if origin and origin in allowed:
+        return origin
+    return allowed[0] if allowed else "http://localhost:5173"
+
 @router.post("/request-magic-link")
-async def request_magic_link(req: MagicLinkRequest, db: AsyncSession = Depends(get_db)):
+async def request_magic_link(req: MagicLinkRequest, request: Request, db: AsyncSession = Depends(get_db)):
     email = req.email.lower()
     
     # Check if email is in allowlist
@@ -28,12 +41,17 @@ async def request_magic_link(req: MagicLinkRequest, db: AsyncSession = Depends(g
     token = create_magic_link_token(email)
     
     # In development, print to console
-    link = f"{settings.frontend_url}/login/verify?token={token}"
+    link = f"{_frontend_base(request)}/login/verify?token={token}"
     logger.info(f"MAGIC LINK FOR {email}: {link}")
     
     # In a real app, send an email here
-    
-    return {"message": "If the email is allowed, a magic link has been sent."}
+
+    response = {"message": "If the email is allowed, a magic link has been sent."}
+    # Development only: hand the link back so the login page can show it.
+    # Never enable this outside development - anyone who knows an allowed email could sign in.
+    if settings.app_env == "development":
+        response["dev_link"] = link
+    return response
 
 @router.post("/verify", response_model=TokenResponse)
 async def verify_magic_link(req: VerifyLinkRequest, db: AsyncSession = Depends(get_db)):

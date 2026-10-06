@@ -13,6 +13,5 @@ export const Placeholder: React.FC<{ title: string; desc: string }> = ({ title, 
   </div>
 );
 
-export const ScreenRunner: React.FC = () => <Placeholder title="Screen Runner" desc="This page will house the logic for executing and managing property screening." />;
 export const Auctions: React.FC = () => <Placeholder title="Auctions" desc="This page will display auction boards and related real-estate tracking." />;
 export const ReviewQueue: React.FC = () => <Placeholder title="Review Queue" desc="This page will provide the workflow for reviewing flagged properties." />;

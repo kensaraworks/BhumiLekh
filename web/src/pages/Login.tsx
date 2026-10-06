@@ -9,6 +9,8 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [devLink, setDevLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -25,13 +27,26 @@ export const Login: React.FC = () => {
     
     setStatus('loading');
     setErrorMessage('');
+    setDevLink(null);
+    setCopied(false);
     
     try {
-      await authAPI.requestMagicLink(email);
+      const { dev_link } = await authAPI.requestMagicLink(email);
+      setDevLink(dev_link ?? null);
       setStatus('success');
     } catch (error) {
       setStatus('error');
       setErrorMessage('Failed to send magic link. Please try again later.');
+    }
+  };
+
+  const copyDevLink = async () => {
+    if (!devLink) return;
+    try {
+      await navigator.clipboard.writeText(devLink);
+      setCopied(true);
+    } catch {
+      setCopied(false);
     }
   };
 
@@ -87,9 +102,36 @@ export const Login: React.FC = () => {
           <h1 className="text-[28px] font-semibold tracking-[-0.01em]">Sign in</h1>
           <p className="text-[15px] leading-normal text-muted">We will email you a one-time sign-in link.</p>
 
-          {status === 'success' ? (
+          {status === 'success' && devLink ? (
+            <div className="flex flex-col gap-3 rounded-lg border border-dashed border-line bg-white p-4">
+              <p className="text-[13px] font-medium uppercase tracking-wide text-muted">Development mode</p>
+              <p className="text-[15px] leading-normal">Your sign-in link is ready. It expires in 15 minutes.</p>
+              <a
+                href={devLink}
+                className="flex h-11 items-center justify-center rounded-lg bg-forest text-[15px] font-medium text-white"
+              >
+                Sign in now
+              </a>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={devLink}
+                  aria-label="Magic link"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="h-9 min-w-0 flex-1 rounded-md border border-line bg-paper px-2 text-[12px] text-muted"
+                />
+                <button
+                  type="button"
+                  onClick={copyDevLink}
+                  className="h-9 rounded-md border border-line px-3 text-[13px] font-medium"
+                >
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          ) : status === 'success' ? (
             <p className="text-[15px] leading-normal">
-              Check your email for a magic link to sign in. (In development, check the backend console for the link).
+              If this email is approved, a sign-in link is on its way. Check your inbox.
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">

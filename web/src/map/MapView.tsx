@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Map as MapLibreMap, type GeoJSONSource, type GeoJSONSourceSpecification, type LayerSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import './maplibreWorker';
 import {
   drawOrder,
   layerDefs,

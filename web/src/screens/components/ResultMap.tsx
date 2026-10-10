@@ -1,5 +1,6 @@
 import { Map as MapLibreMap, type GeoJSONSource, type MapGeoJSONFeature } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import '../../map/maplibreWorker';
 import { useEffect, useRef } from 'react';
 import { defaultView, mapStyle } from '../../map/mapConfig';
 import type { BBox, ResultFeatureCollection } from '../types';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { Map as MapLibreMap, type LayerSpecification } from 'maplibre-gl';
+import { Map as MapLibreMap, type GeoJSONSource, type GeoJSONSourceSpecification, type LayerSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {
   drawOrder,
@@ -9,6 +9,8 @@ import {
   PARCEL_CLICK_LAYERS,
   PARCEL_ID_PROPERTY,
   PARCEL_SELECTED,
+  zoomLimits,
+  type LayerDef,
   type LayerId,
   type LayerState,
   type LayerStatus,
@@ -55,6 +57,12 @@ function applyLayerState(map: MapLibreMap, layers: Record<LayerId, LayerState>) 
 
 const existing = (map: MapLibreMap, ids: string[]) => ids.filter((id) => map.getLayer(id));
 
+/** Lowest zoom at which any of the layer's style layers draws. */
+const drawsFrom = (def: LayerDef) => Math.min(...def.styleLayers.map((l) => l.minzoom ?? 0));
+
+const EMPTY: GeoJSONSourceSpecification['data'] = { type: 'FeatureCollection', features: [] };
+const FIT_PADDING = { top: 70, bottom: 110, left: 330, right: 70 }; // clear of the layer panel and timeline
+
 interface Props {
   layers: Record<LayerId, LayerState>;
   selectedParcelId: string | null;
@@ -81,10 +89,29 @@ export function MapView({ layers, selectedParcelId, mapRef, onSelectParcel, onZo
       style: mapStyle,
       center: startView.center,
       zoom: startView.zoom,
+      ...zoomLimits,
       transformRequest: dataSource.transformRequest,
     });
     mapRef.current = map;
     const failed = new Set<string>();
+    // GeoJSON layers whose data is fetched only once the map reaches a zoom (PRD: no parcel geometry below z15)
+    const deferred = new Map<LayerId, { data: GeoJSONSourceSpecification['data']; zoom: number }>();
+
+    const loadDeferred = () => {
+      for (const [id, pending] of deferred) {
+        if (map.getZoom() < pending.zoom) continue;
+        deferred.delete(id);
+        (map.getSource(id) as GeoJSONSource).setData(pending.data);
+        latest.current.onLayerStatus(id, 'loading');
+      }
+    };
+
+    dataSource
+      .loadInitialBounds?.()
+      .then((bounds) => {
+        if (bounds && mapRef.current === map) map.fitBounds(bounds, { padding: FIT_PADDING, duration: 0 });
+      })
+      .catch((error) => console.error('Could not load the data bounds; keeping the default view.', error));
 
     map.on('load', () => {
       addHatchImage(map);
@@ -94,22 +121,30 @@ export function MapView({ layers, selectedParcelId, mapRef, onSelectParcel, onZo
           latest.current.onLayerStatus(def.id, 'unavailable');
           continue;
         }
-        map.addSource(def.id, spec);
+        const deferZoom = spec.type === 'geojson' ? dataSource.deferUntilZoom?.(def) : undefined;
+        if (spec.type === 'geojson' && deferZoom !== undefined) {
+          deferred.set(def.id, { data: spec.data, zoom: deferZoom });
+          map.addSource(def.id, { ...spec, data: EMPTY });
+        } else {
+          map.addSource(def.id, spec);
+        }
         for (const layer of def.styleLayers) {
           const sourceLayer = spec.type === 'vector' ? { 'source-layer': def.tilePath } : {};
           map.addLayer({ ...layer, source: def.id, ...sourceLayer } as unknown as LayerSpecification);
         }
-        latest.current.onLayerStatus(def.id, 'loading');
+        latest.current.onLayerStatus(def.id, deferred.has(def.id) ? 'zoomIn' : 'loading');
       }
       applyLayerState(map, latest.current.layers);
+      loadDeferred();
       loadedRef.current = true;
       latest.current.onZoomChange(Math.round(map.getZoom()));
     });
 
     map.on('error', (event) => {
-      const { sourceId } = event as unknown as { sourceId?: string };
+      const { sourceId, error } = event as unknown as { sourceId?: string; error?: Error };
       const def = layerDefs.find((d) => d.id === sourceId);
       if (!def) return;
+      console.error(`Map layer "${def.id}" failed to load`, error);
       failed.add(def.id);
       latest.current.onLayerStatus(def.id, 'error');
     });
@@ -117,6 +152,10 @@ export function MapView({ layers, selectedParcelId, mapRef, onSelectParcel, onZo
     map.on('idle', () => {
       for (const def of layerDefs) {
         if (!map.getSource(def.id) || failed.has(def.id) || !latest.current.layers[def.id].on) continue;
+        if (deferred.has(def.id) || map.getZoom() < drawsFrom(def)) {
+          latest.current.onLayerStatus(def.id, 'zoomIn');
+          continue;
+        }
         const ids = def.styleLayers.map((l) => l.id);
         const hasFeatures = map.queryRenderedFeatures({ layers: ids }).length > 0;
         latest.current.onLayerStatus(def.id, hasFeatures ? 'ready' : 'empty');
@@ -124,6 +163,7 @@ export function MapView({ layers, selectedParcelId, mapRef, onSelectParcel, onZo
     });
 
     map.on('zoom', () => latest.current.onZoomChange(Math.round(map.getZoom())));
+    map.on('zoomend', loadDeferred);
 
     map.on('click', (event) => {
       const feature = map.queryRenderedFeatures(event.point, { layers: existing(map, PARCEL_CLICK_LAYERS) })[0];
@@ -165,7 +205,9 @@ export function MapView({ layers, selectedParcelId, mapRef, onSelectParcel, onZo
 
   return (
     <div className="absolute inset-0">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* h-full/w-full: maplibre-gl.css sets .maplibregl-map { position: relative } outside any CSS layer, which
+          overrides Tailwind's layered `absolute`; without an explicit size the map container collapses to 0 px. */}
+      <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {hover && (
         <div
           className="pointer-events-none absolute w-47.5 rounded-lg bg-ink px-2.5 py-2 text-[12.5px] leading-[1.45] text-white"

@@ -1,4 +1,4 @@
-import { layerDefs, type LayerId, type LayerState, type LayerStatus } from './mapConfig';
+import { LAND_TYPE_FALLBACK, LAND_TYPE_FILL, layerDefs, type LayerId, type LayerState, type LayerStatus } from './mapConfig';
 
 type LegendItem =
   | { label: string; bg: string; border: string; dashed?: boolean; round?: boolean }
@@ -6,12 +6,19 @@ type LegendItem =
   | { from: string; to: string; ramp: string[] };
 
 const LEGENDS: Record<LayerId, { items: LegendItem[]; note?: string }> = {
+  villages: {
+    items: [{ label: 'Parcel coverage outline', bg: '#FFFFFF', border: '#7A4E12' }],
+    note: 'Union of survey and block polygons · roads and gaps show as inner lines',
+  },
   parcels: {
     items: [
-      { label: 'A surveyed', bg: '#D5E7E1', border: '#1E5B53' },
+      ...LAND_TYPE_FILL.map(([label, bg]) => ({ label: label.replace(' Land', ''), bg, border: '#1E5B53' })),
+      { label: LAND_TYPE_FALLBACK.label.replace(' Land', ''), bg: LAND_TYPE_FALLBACK.fill, border: '#1E5B53' },
+      { label: 'A digitised', bg: '#FFFFFF', border: '#1E5B53' },
       { label: 'B approximate', bg: '#F3EBCF', border: '#8C7424', dashed: true },
       { text: 'C not drawn · search only' },
     ],
+    note: 'Points from z15, polygons from z17',
   },
   zoning: {
     items: [
@@ -39,6 +46,7 @@ const STATUS_TEXT: Partial<Record<LayerStatus, string>> = {
   unavailable: 'Data not connected yet',
   error: 'Could not load this layer',
   empty: 'No features in this view',
+  zoomIn: 'Zoom in to see this layer',
 };
 
 const legendText = 'inline-flex items-center gap-1.5 text-[11.5px] text-muted';

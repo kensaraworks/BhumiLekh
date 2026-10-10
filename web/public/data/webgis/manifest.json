@@ -1,0 +1,178 @@
+{
+ "source": "MP WebGIS 2.0 public WFS tcgis:vp_villagemap_landbank (saved responses, mapUI package)",
+ "crs": "EPSG:4326 (lon, lat)",
+ "boundary_tier": "A for every polygon: digitised cadastral polygon from WebGIS 2.0 / Bhu-Naksha (PRD 6.3). No Tier B or C records exist in this source.",
+ "area_method": "spherical approximation, R = 6371008.8 m",
+ "outline_method": "boundary of the union of survey (S) and block (B) polygons (shared edges cancelled after splitting at T-junctions); unparcelled roads/gaps and overlapping polygons remain as inner lines",
+ "bounds": [
+  75.84665,
+  22.595404,
+  75.925566,
+  22.653721
+ ],
+ "polygons": 6170,
+ "villages": [
+  {
+   "loc_id": 5027280,
+   "village": "Kalod Kartal",
+   "name_hi": "कैलोदकर्ताल",
+   "lgd_code": "476255",
+   "counts": {
+    "S": 1535,
+    "B": 0,
+    "P": 0
+   },
+   "duplicates_skipped": 0,
+   "outside_mp_rejected": 0,
+   "self_intersecting": 0,
+   "no_parcel_id": 305,
+   "unlinked_land_type": 351,
+   "fetched_at": {
+    "010_landbank_S.json": "2026-10-05T13:58:59+0530",
+    "011_landbank_B.json": "2026-10-05T13:59:01+0530",
+    "012_landbank_P.json": "2026-10-05T13:59:08+0530"
+   },
+   "bbox": [
+    75.84665,
+    22.626616,
+    75.89069,
+    22.653721
+   ],
+   "area_ha_survey_block": 961.9
+  },
+  {
+   "loc_id": 5027281,
+   "village": "Morod",
+   "name_hi": "मोरोद नेहरू",
+   "lgd_code": "476257",
+   "counts": {
+    "S": 898,
+    "B": 2,
+    "P": 557
+   },
+   "duplicates_skipped": 1,
+   "outside_mp_rejected": 0,
+   "self_intersecting": 0,
+   "no_parcel_id": 292,
+   "unlinked_land_type": 318,
+   "fetched_at": {
+    "010_landbank_S.json": "2026-10-05T13:59:17+0530",
+    "011_landbank_B.json": "2026-10-05T13:59:22+0530",
+    "012_landbank_P.json": "2026-10-05T13:59:30+0530"
+   },
+   "bbox": [
+    75.851593,
+    22.595404,
+    75.887571,
+    22.630552
+   ],
+   "area_ha_survey_block": 942.1
+  },
+  {
+   "loc_id": 5027282,
+   "village": "Nehru",
+   "name_hi": "नेहरू वन ग्राम",
+   "lgd_code": "476364",
+   "counts": {
+    "S": 0,
+    "B": 0,
+    "P": 0
+   },
+   "duplicates_skipped": 0,
+   "outside_mp_rejected": 0,
+   "self_intersecting": 0,
+   "no_parcel_id": 0,
+   "unlinked_land_type": 0,
+   "fetched_at": {
+    "010_landbank_S.json": "2026-10-05T14:00:18+0530",
+    "011_landbank_B.json": "2026-10-05T14:00:25+0530",
+    "012_landbank_P.json": "2026-10-05T14:00:32+0530"
+   },
+   "note": "no polygons on the portal for this village; nothing drawn"
+  },
+  {
+   "loc_id": 5027283,
+   "village": "Umri Kheda",
+   "name_hi": "उमरीखेडा",
+   "lgd_code": "476258",
+   "counts": {
+    "S": 491,
+    "B": 5,
+    "P": 457
+   },
+   "duplicates_skipped": 0,
+   "outside_mp_rejected": 0,
+   "self_intersecting": 0,
+   "no_parcel_id": 88,
+   "unlinked_land_type": 104,
+   "fetched_at": {
+    "010_landbank_S.json": "2026-10-05T13:59:37+0530",
+    "011_landbank_B.json": "2026-10-05T13:59:43+0530",
+    "012_landbank_P.json": "2026-10-05T13:59:51+0530"
+   },
+   "bbox": [
+    75.88019,
+    22.596308,
+    75.901715,
+    22.618767
+   ],
+   "area_ha_survey_block": 374.3
+  },
+  {
+   "loc_id": 5027284,
+   "village": "Asrawad Khurd",
+   "name_hi": "असरावद खुर्द",
+   "lgd_code": "476261",
+   "counts": {
+    "S": 998,
+    "B": 2,
+    "P": 528
+   },
+   "duplicates_skipped": 0,
+   "outside_mp_rejected": 0,
+   "self_intersecting": 0,
+   "no_parcel_id": 228,
+   "unlinked_land_type": 292,
+   "fetched_at": {
+    "010_landbank_S.json": "2026-09-30T20:09:13+0530",
+    "011_landbank_B.json": "2026-09-30T20:09:13+0530",
+    "012_landbank_P.json": "2026-09-30T20:09:18+0530"
+   },
+   "bbox": [
+    75.886478,
+    22.607645,
+    75.925566,
+    22.636277
+   ],
+   "area_ha_survey_block": 843.9
+  },
+  {
+   "loc_id": 5027285,
+   "village": "Mirjapur",
+   "name_hi": "मिर्जापुर",
+   "lgd_code": "476260",
+   "counts": {
+    "S": 525,
+    "B": 1,
+    "P": 171
+   },
+   "duplicates_skipped": 0,
+   "outside_mp_rejected": 0,
+   "self_intersecting": 0,
+   "no_parcel_id": 75,
+   "unlinked_land_type": 106,
+   "fetched_at": {
+    "010_landbank_S.json": "2026-10-05T13:59:58+0530",
+    "011_landbank_B.json": "2026-10-05T14:00:04+0530",
+    "012_landbank_P.json": "2026-10-05T14:00:11+0530"
+   },
+   "bbox": [
+    75.890134,
+    22.629455,
+    75.925104,
+    22.643241
+   ],
+   "area_ha_survey_block": 368.4
+  }
+ ]
+}

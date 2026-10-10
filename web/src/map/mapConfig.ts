@@ -1,7 +1,7 @@
 import type { StyleSpecification } from 'maplibre-gl';
 
-export type LayerId = 'parcels' | 'zoning' | 'velocity' | 'priceTrend' | 'rera' | 'auctions';
-export type LayerStatus = 'loading' | 'ready' | 'empty' | 'unavailable' | 'error';
+export type LayerId = 'villages' | 'parcels' | 'zoning' | 'velocity' | 'priceTrend' | 'rera' | 'auctions';
+export type LayerStatus = 'loading' | 'ready' | 'empty' | 'zoomIn' | 'unavailable' | 'error';
 export interface LayerState {
   on: boolean;
   opacity: number;
@@ -27,10 +27,12 @@ export interface LayerDef {
 }
 
 export const defaultView = { center: [75.8577, 22.7196] as [number, number], zoom: 11 };
+export const zoomLimits = { minZoom: 5, maxZoom: 19 }; // the OSM raster basemap stops at z19
 
 // Development basemap. Replace with the project's style by setting VITE_MAP_STYLE_URL.
 const developmentBasemap: StyleSpecification = {
   version: 8,
+  // demotiles serves only a few fontstacks; 'Open Sans Semibold' is one of them ('Open Sans Regular' 404s).
   glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
   sources: {
     basemap: {
@@ -57,8 +59,16 @@ const isPolygon = ['==', ['geometry-type'], 'Polygon'];
 const tier = (t: string) => ['all', isPolygon, ['==', ['get', 'boundary_tier'], t]];
 const ramp = (prop: string, stops: [number, string][]) => ['interpolate', ['linear'], ['get', prop], ...stops.flat()];
 
+// Land type fills from the WebGIS legend (006_legend_vp_villagemap_landtype): 9 Government, 10 Private, else Unlinked.
+export const LAND_TYPE_FILL: [string, string][] = [
+  ['Government Land', '#FFC628'],
+  ['Private Land', '#81BC41'],
+];
+export const LAND_TYPE_FALLBACK = { label: 'Unlinked Land', fill: '#DDEBAE' };
+const landTypeFill = ['match', ['get', 'land_type'], ...LAND_TYPE_FILL.flat(), LAND_TYPE_FALLBACK.fill];
+
 const parcelLayers: StyleLayer[] = [
-  { id: 'parcels-a-fill', type: 'fill', filter: tier('A'), minzoom: 17, paint: { 'fill-color': '#D5E7E1' } },
+  { id: 'parcels-a-fill', type: 'fill', filter: tier('A'), minzoom: 17, paint: { 'fill-color': landTypeFill } },
   { id: 'parcels-a-line', type: 'line', filter: tier('A'), minzoom: 17, paint: { 'line-color': '#1E5B53', 'line-width': 1.2 } },
   { id: PARCEL_B_FILL, type: 'fill', filter: tier('B'), minzoom: 17, paint: { 'fill-pattern': 'hatch-b' } },
   {
@@ -81,19 +91,42 @@ const parcelLayers: StyleLayer[] = [
     filter: ['==', ['geometry-type'], 'Point'],
     minzoom: 15,
     maxzoom: 17,
-    paint: { 'circle-radius': 5, 'circle-color': '#1E5B53', 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 1 },
+    paint: { 'circle-radius': 5, 'circle-color': landTypeFill, 'circle-stroke-color': '#1E5B53', 'circle-stroke-width': 1 },
   },
   {
     id: 'parcels-labels',
     type: 'symbol',
     filter: isPolygon,
     minzoom: 17,
-    layout: { 'text-field': ['get', 'khasra_no'], 'text-font': ['Open Sans Regular'], 'text-size': 11 },
+    layout: { 'text-field': ['get', 'khasra_no'], 'text-font': ['Open Sans Semibold'], 'text-size': 11 },
     paint: { 'text-color': '#23413C' },
   },
 ];
 
 export const layerDefs: LayerDef[] = [
+  {
+    id: 'villages',
+    label: 'Villages',
+    tilePath: 'villages',
+    defaultOn: true,
+    defaultOpacity: 0.9,
+    styleLayers: [
+      {
+        id: 'villages-outline',
+        type: 'line',
+        filter: ['!=', ['geometry-type'], 'Point'],
+        paint: { 'line-color': '#7A4E12', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 2] },
+      },
+      {
+        id: 'villages-label',
+        type: 'symbol',
+        filter: ['==', ['geometry-type'], 'Point'],
+        maxzoom: 15.5,
+        layout: { 'text-field': ['get', 'name'], 'text-font': ['Open Sans Semibold'], 'text-size': 14 },
+        paint: { 'text-color': '#4A2F08', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1.6 },
+      },
+    ],
+  },
   { id: 'parcels', label: 'Parcels', tilePath: 'parcels', defaultOn: true, defaultOpacity: 0.8, styleLayers: parcelLayers },
   {
     id: 'zoning',
@@ -187,4 +220,4 @@ export const layerDefs: LayerDef[] = [
 ];
 
 // Bottom to top: area layers under parcels, point markers above.
-export const drawOrder: LayerId[] = ['zoning', 'velocity', 'priceTrend', 'parcels', 'rera', 'auctions'];
+export const drawOrder: LayerId[] = ['zoning', 'velocity', 'priceTrend', 'parcels', 'villages', 'rera', 'auctions'];

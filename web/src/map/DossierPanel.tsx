@@ -46,6 +46,25 @@ function Message({ children }: { children: ReactNode }) {
   return <p className="px-5 py-6 text-sm text-muted">{children}</p>;
 }
 
+function SourceRecord({ record }: { record: NonNullable<Dossier['sourceRecord']> }) {
+  return (
+    <Section title="Source record">
+      <span className="text-[13px] text-muted">
+        {record.source}
+        {record.fetchedAt && ` · fetched ${record.fetchedAt.slice(0, 10)}`}
+      </span>
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1">
+        {record.attributes.map((a) => (
+          <div key={a.label} className="contents">
+            <dt className="text-[13px] text-muted">{a.label}</dt>
+            <dd className="font-plex-mono text-[13px]">{a.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </Section>
+  );
+}
+
 function Sections({ d }: { d: Dossier }) {
   const areasDiffer =
     d.areaRecordedHa && d.areaGeometryHa && Math.abs(d.areaRecordedHa - d.areaGeometryHa) / d.areaRecordedHa > 0.1;
@@ -226,6 +245,7 @@ export function DossierPanel({ parcelId, onClose }: { parcelId: string; onClose:
         {state.status === 'loading' && <Message>Loading dossier…</Message>}
         {state.status === 'empty' && <Message>No dossier is available for this parcel yet.</Message>}
         {state.status === 'error' && <Message>Could not load the dossier. Try selecting the parcel again.</Message>}
+        {dossier?.sourceRecord && <SourceRecord record={dossier.sourceRecord} />}
         {dossier && <Sections d={dossier} />}
       </div>
     </aside>
